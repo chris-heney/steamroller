@@ -1,0 +1,9 @@
+{
+  "name": "orwa-export-format",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Chris Heney <chris.heney@gmail.com>",
+  "dependencies": {
+    "csv-parse": "^5.3.0"
+  }
+}
