@@ -1,10 +1,10 @@
-const fs = require('fs')
-const parse = require('csv-parse').parse
+import fs from 'fs'
+import { parse } from 'csv-parse'
 
 // @TODO: PSR-Style Autoloading?
-const stripNull = require('lib/strip-null')
-const translateBoolean = require('lib/translate-boolean')
-const isJsonString = require('lib/is-json-string')
+import stripNull from './lib/strip-null.js'
+import translateBoolean from './lib/translate-boolean.js'
+import isJsonString from './lib/is-json-string.js'
 
 const SRC_DIR = './test-data'
 const DEST_DIR = './parsed-data'
@@ -34,18 +34,20 @@ function breakdownJSONComponentForCSV( component, componentId, compilation ){
 
     const fieldCount = Object.keys( component ).length
 
-    compilation.rows.push( [] )
+    // compilation.rows.push( [] )
 
     for ( const prop in component ){
 
+
         // Detect nested component-as-string and recurse!
-        if ( isJsonString( component[prop] ) ){
+        if ( isJsonString( String( component[prop] ) ) ){
             let newCompilation = breakdownJSONComponentForCSV( component[prop], componentId + '-' + prop, compilation )
 
             // @TODO: my initial dataset did not have any nested components, so recursion was not required, but it
             //        would be a really great feature.  To do this: merge headings and rows from the newCompilation
             //        object to the recursing compilation object before the 'continue'-ing to the next property of the
             //        (relatively) initial component
+            // @note: Use the same push/splice found in the original invoking function to produce the same working result
 
             continue
         }
@@ -54,7 +56,7 @@ function breakdownJSONComponentForCSV( component, componentId, compilation ){
             compilation.headings.push( componentId + '-' + prop )
         }
 
-        compilation.rows[ row.length - 1 ].push( component[prop] )
+        compilation.rows.push( component[prop] )
     }
 
     return compilation
@@ -82,40 +84,44 @@ function flattenCsv( srcFilename ){
             fs.readFileSync( SRC_DIR + '/' + srcFilename, 'utf8' ),
             {}, ( err, rows ) => {
 
-                const originalRowLength = rows.length
+                let newRows = [];
 
                 rows.forEach( ( row, i ) => {
 
-                    if ( i === 2 ){
-                        console.log(row)
-                    }
+                    newRows.push( [] )
 
                     row.forEach( ( col, j ) => {
 
-                        col = stripNull( col )
-                        col = translateBoolean( col )
+                        let val = stripNull( String( col ) )
+                        val = translateBoolean( val )
 
-                        if (isJsonString(col)){
+                        
+                        if ( isJsonString( val ) ){
 
                             let component = breakdownJSONComponentForCSV( col, rows[0][j] )
 
                             // conditionally add additional headings
-                            if ( rows[0].length < originalRowLength + component.length ){
-                                rows[0].splice( j+1, 1, ...component.headings )
+                            if ( newRows[0].length < rows[i].length + component.headings.length ){
+                                console.log('Added ' + component.headings.length + ' column headings at index: ' + j)
+                                newRows[0].splice( j+1, 0, ...component.headings )
                             }
 
                             // Remove the compressed/serialized/stringified object and replace it with actual field-values
-                            rows[i].splice( j+1, 1, ...component.rows )
+                            newRows[i].push( ...component.rows )
 
+                        } else {
+                            newRows[i].push( val )
                         }
 
                     } )
 
                 })
-            
-                fs.writeFileSync( DEST_DIR + '/' + srcFilename, rows)
+
+                let csvContent = newRows.map(e => e.join(",")).join("\n")
+                fs.writeFileSync( DEST_DIR + '/' + srcFilename, csvContent)
             }
         )
+
     } catch (err){
         console.error(err)
     }

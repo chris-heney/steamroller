@@ -1,5 +1,7 @@
 # Steamroller
 
+Steamroller is a powerful 2-Demensional data flattener written in JavaScript.
+
 Many times we are challenged with (sometimes deeply) nested data structures we just need to be unnormalized.
 Steamroller is a JavaScript utility function built to take nested data in different formats, and flatten it.
 
