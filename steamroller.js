@@ -101,12 +101,15 @@ function flattenCsv( srcFilename ){
                             let component = breakdownJSONComponentForCSV( col, rows[0][j] )
 
                             // conditionally add additional headings
-                            if ( newRows[0].length < rows[i].length + component.headings.length ){
-                                console.log('Added ' + component.headings.length + ' column headings at index: ' + j)
-                                newRows[0].splice( j+1, 0, ...component.headings )
+                            if ( newRows[0].length <= rows[i].length + component.headings.length ){
+
+                                newRows[0].splice(
+                                    j + (newRows[0].length - rows[0].length),
+                                    1,  // We want to remove the containing field
+                                    ...component.headings 
+                                )
                             }
 
-                            // Remove the compressed/serialized/stringified object and replace it with actual field-values
                             newRows[i].push( ...component.rows )
 
                         } else {
@@ -117,7 +120,7 @@ function flattenCsv( srcFilename ){
 
                 })
 
-                let csvContent = newRows.map(e => e.join(",")).join("\n")
+                let csvContent = '"' + newRows.map(e => e.join('","')).join('"\n"') + '"'
                 fs.writeFileSync( DEST_DIR + '/' + srcFilename, csvContent)
             }
         )

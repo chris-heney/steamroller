@@ -132,3 +132,5 @@ provided here.
 
 Besides Strapi, I have in my programming life ran into the need to flatten data many times.  I hope this package is
 useful to everyone.
+
+Special thanks to Ms Emma!
