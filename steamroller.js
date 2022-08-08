@@ -3,6 +3,7 @@ import { parse } from 'csv-parse'
 
 // @TODO: PSR-Style Autoloading?
 import stripNull from './lib/strip-null.js'
+import stripArray from './lib/strip-array.js'
 import translateBoolean from './lib/translate-boolean.js'
 import isJsonString from './lib/is-json-string.js'
 
@@ -84,6 +85,7 @@ function flattenCsv( srcFilename ){
             fs.readFileSync( SRC_DIR + '/' + srcFilename, 'utf8' ),
             {}, ( err, rows ) => {
 
+                let expandedColumnIndex = {};
                 let newRows = [];
 
                 rows.forEach( ( row, i ) => {
@@ -92,13 +94,19 @@ function flattenCsv( srcFilename ){
 
                     row.forEach( ( col, j ) => {
 
-                        let val = stripNull( String( col ) )
-                        val = translateBoolean( val )
+                        let val = stripArray( String( col ) )
+                        val = stripNull( String( val ) )
+                        val = translateBoolean( String( val ) )
 
+                        if ( val === 'true' ){
+                            console.log('------------------')
+                            console.log(val)
+                            console.log('------------------')
+                        }
                         
                         if ( isJsonString( val ) ){
 
-                            let component = breakdownJSONComponentForCSV( col, rows[0][j] )
+                            let component = breakdownJSONComponentForCSV( val, rows[0][j] )
 
                             // conditionally add additional headings
                             if ( newRows[0].length <= rows[i].length + component.headings.length ){
@@ -112,8 +120,20 @@ function flattenCsv( srcFilename ){
 
                             newRows[i].push( ...component.rows )
 
+                            expandedColumnIndex['index-' + j] = component.headings.length
+
                         } else {
-                            newRows[i].push( val )
+
+                            // If the column index was intended to have a component, but was blank, we need to account for the column offset
+                            if ( val === '' && typeof expandedColumnIndex['index-' + j] !== 'undefined' ){
+
+                                for (let k = 0; k < expandedColumnIndex['index-' + j]; k++){
+                                    newRows[i].push( '' )
+                                }
+
+                            } else {
+                                newRows[i].push( val )
+                            }
                         }
 
                     } )
